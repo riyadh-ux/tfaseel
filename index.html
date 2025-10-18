@@ -64,6 +64,7 @@
       cursor: pointer;
       color: #fff;
     }
+    /* ألوان الخيارات (للـ <option>) تبقى كدليل بصري في القوائم المنسدلة */
     option[value="منجزة"] { background-color: #12b76a; color: #fff; }
     option[value="قيد التنفيذ"] { background-color: #facc15; color: #000; }
     option[value="مؤجلة"] { background-color: #f97316; color: #fff; }
@@ -81,18 +82,28 @@
       cursor: pointer;
       box-shadow: 0 4px 10px rgba(255,198,39,0.5);
     }
-    button.secondary {
-      background: #0d1c4d;
-      color: #fff;
-      border: 1px solid #1e2a50;
-    }
     footer {
       text-align: center;
       color: #93a3c6;
       font-size: 12px;
       margin: 30px 0;
     }
-    #statusMsg { margin-inline-start: 8px; }
+      # طباعة أفضل (تحويل إلى PDF)
+    @media print {
+      body { background: #fff; color:#000; }
+      h1 { color:#000; }
+      .page { box-shadow:none; background:#fff; border-radius:0; }
+      .field input, .field textarea, .field select { background:#fff; color:#000; border:1px solid #ccc; }
+      table { background:#fff; }
+      table th { background:#f2f2f2; color:#000; }
+      button, .secondary, #statusMsg { display:none !important; }
+      a[href]::after { content: ""; }
+      /* ضبط حجم الورقة وهوامش مناسبة */
+    }
+    @page {
+      size: A4;
+      margin: 12mm 12mm 16mm 12mm;
+    }
   </style>
 </head>
 <body>
@@ -156,11 +167,13 @@
     <div class="field" style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
       <button id="addRow">إضافة صف</button>
       <button id="removeRow">حذف الصف الأخير</button>
+      <button id="printBtn" class="secondary" style="border:1px dashed #FFC627">🖨️ طباعة / حفظ PDF</button>
       <button id="submitBtn" style="background:#12b76a;color:#fff">إرسال التقرير</button>
       <button id="copyBtn" class="secondary">نسخ كـنص</button>
       <button id="downloadBtn" class="secondary">تنزيل JSON</button>
       <span id="statusMsg" style="font-size:12px;color:#cbd5e1"></span>
     </div>
+    <button id="removeRow">حذف الصف الأخير</button>
 
     <div class="field">
       <label>ملاحظات عامة</label>
@@ -178,6 +191,7 @@
   </footer>
 
   <script>
+    // دالة لتلوين الـ <select> بحسب القيمة الحالية
     function colorizeSelect(sel){
       const v = sel.value;
       let bg = '#0d1c4d';
@@ -195,6 +209,7 @@
       sel.style.color = fg;
     }
 
+    // تلوين جميع القوائم عند التحميل
     function initSelectColors(){
       document.querySelectorAll('select.priority, select.status').forEach(s=>{
         colorizeSelect(s);
@@ -219,6 +234,7 @@
         '</select></td>' +
         '<td contenteditable>—</td>';
       tbody.appendChild(tr);
+      // تفعيل التلوين على القوائم الجديدة
       tr.querySelectorAll('select').forEach(s=>{
         colorizeSelect(s);
         s.addEventListener('change', ()=> colorizeSelect(s));
@@ -229,9 +245,34 @@
       if(tbody.rows.length>1){ tbody.deleteRow(tbody.rows.length-1); }
     });
 
-    // ==== إرسال البيانات إلى Google Sheet (Apps Script) ====
-    // ضع رابط الويب آب هنا بعد النشر:
-    const SUBMIT_URL = ""; // مثال: "https://script.google.com/macros/s/DEPLOYMENT_ID/exec"
+    // "اختبارات" بسيطة للتأكد من عدم وجود أخطاء وتشغيل الميزات الأساسية
+    function runBasicTests(){
+      try{
+        const before = tbody.rows.length;
+        document.getElementById('addRow').click();
+        const after = tbody.rows.length;
+        console.assert(after === before + 1, 'Test(addRow): يجب أن يزداد عدد الصفوف بواحد');
+
+        const firstStatus = document.querySelector('select.status');
+        firstStatus.value = 'مؤجلة';
+        firstStatus.dispatchEvent(new Event('change'));
+        console.assert(firstStatus.style.backgroundColor !== '', 'Test(colorize): يجب تطبيق لون على الحقل');
+        // إعادة قيمة افتراضية
+        firstStatus.value = 'منجزة';
+        firstStatus.dispatchEvent(new Event('change'));
+        console.log('All basic tests passed ✅');
+      }catch(e){
+        console.error('Basic tests failed ❌', e);
+      }
+    }
+
+    // بدء التلوين وتشغيل الاختبارات
+    initSelectColors();
+    runBasicTests();
+      // ==== إرسال البيانات إلى Google Sheet (Apps Script) ====
+    // ضع رابط الويب آب هنا بعد النشر (مثال):
+    // const SUBMIT_URL = "https://script.google.com/macros/s/DEPLOYMENT_ID/exec";
+    const SUBMIT_URL = ""; // ← استبدلها برابط الويب آب
 
     function collectData(){
       const data = {
@@ -265,7 +306,7 @@
       try{
         const res = await fetch(SUBMIT_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
         if(!res.ok) throw new Error('HTTP '+res.status);
-        await res.json().catch(()=>({ok:true}));
+        const j = await res.json().catch(()=>({ok:true}));
         msg.textContent = '✓ تم الإرسال بنجاح';
       }catch(e){
         console.error(e);
@@ -281,15 +322,19 @@
       lines.push(`التاريخ: ${d.date}`);
       lines.push('— ملخص اليوم —');
       lines.push(d.summary);
-      lines.push('\n— المهام —');
+      lines.push('
+— المهام —');
       d.tasks.forEach((t,i)=>{
         lines.push(`${i+1}. ${t.task} | مدة: ${t.duration} | أولوية: ${t.priority} | حالة: ${t.status} | ملاحظات: ${t.remark}`);
       });
-      lines.push('\n— ملاحظات عامة —');
+      lines.push('
+— ملاحظات عامة —');
       lines.push(d.notes);
-      lines.push('\n— خطة الغد —');
+      lines.push('
+— خطة الغد —');
       lines.push(d.plan);
-      navigator.clipboard.writeText(lines.join('\n')).then(()=>{
+      navigator.clipboard.writeText(lines.join('
+')).then(()=>{
         document.getElementById('statusMsg').textContent = '✓ نُسخ النص للحافظة';
       });
     }
@@ -306,27 +351,7 @@
     document.getElementById('submitBtn').addEventListener('click', submitData);
     document.getElementById('copyBtn').addEventListener('click', copyAsText);
     document.getElementById('downloadBtn').addEventListener('click', downloadJSON);
-
-    // اختبارات سريعة
-    function runBasicTests(){
-      try{
-        const before = tbody.rows.length;
-        document.getElementById('addRow').click();
-        const after = tbody.rows.length;
-        console.assert(after === before + 1, 'Test(addRow): يجب أن يزداد عدد الصفوف بواحد');
-        const firstStatus = document.querySelector('select.status');
-        firstStatus.value = 'مؤجلة';
-        firstStatus.dispatchEvent(new Event('change'));
-        console.assert(firstStatus.style.backgroundColor !== '', 'Test(colorize): يجب تطبيق لون على الحقل');
-        firstStatus.value = 'منجزة';
-        firstStatus.dispatchEvent(new Event('change'));
-        console.log('All basic tests passed ✅');
-      }catch(e){
-        console.error('Basic tests failed ❌', e);
-      }
-    }
-    initSelectColors();
-    runBasicTests();
+    document.getElementById('printBtn').addEventListener('click', ()=> window.print());
   </script>
 </body>
 </html>
