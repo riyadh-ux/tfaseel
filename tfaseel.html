@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>نموذج تقرير يومي فردي — تفاصيل للغات</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Noto Sans Arabic', sans-serif;
+      background-color: #0A1736;
+      color: #ffffff;
+      text-align: right;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #FFC627;
+      text-align: center;
+      margin-top: 30px;
+      font-size: 26px;
+    }
+    .page {
+      max-width: 900px;
+      background-color: #14204a;
+      margin: 20px auto;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    }
+    .field { margin-bottom: 15px; }
+    .field label { display: block; font-size: 14px; color: #cbd5e1; margin-bottom: 5px; }
+    .field input, .field textarea, .field select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #1e2a50;
+      background: #0d1c4d;
+      color: #fff;
+      font-size: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: #0d1c4d;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    table th, table td {
+      border: 1px solid #1e2a50;
+      padding: 10px;
+      text-align: right;
+    }
+    table th {
+      background-color: #002BBA;
+      color: #fff;
+    }
+    select.priority, select.status {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+    }
+    option[value="منجزة"] { background-color: #12b76a; color: #fff; }
+    option[value="قيد التنفيذ"] { background-color: #facc15; color: #000; }
+    option[value="مؤجلة"] { background-color: #f97316; color: #fff; }
+    option[value="عالية"] { background-color: #dc2626; color: #fff; }
+    option[value="متوسطة"] { background-color: #facc15; color: #000; }
+    option[value="منخفضة"] { background-color: #16a34a; color: #fff; }
+    button {
+      background: #FFC627;
+      color: #000;
+      border: none;
+      padding: 10px 15px;
+      margin-top: 10px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(255,198,39,0.5);
+    }
+    button.secondary {
+      background: #0d1c4d;
+      color: #fff;
+      border: 1px solid #1e2a50;
+    }
+    footer {
+      text-align: center;
+      color: #93a3c6;
+      font-size: 12px;
+      margin: 30px 0;
+    }
+    #statusMsg { margin-inline-start: 8px; }
+  </style>
+</head>
+<body>
+  <h1>تقرير يومي فردي</h1>
+
+  <div class="page">
+    <div class="field">
+      <label>اسم الموظف</label>
+      <input type="text" placeholder="اكتب الاسم هنا">
+    </div>
+
+    <div class="field">
+      <label>القسم</label>
+      <input type="text" placeholder="مثال: الشؤون الأكاديمية">
+    </div>
+
+    <div class="field">
+      <label>التاريخ</label>
+      <input type="date">
+    </div>
+
+    <div class="field">
+      <label>ملخص اليوم</label>
+      <textarea placeholder="تلخيص أبرز الإنجازات والمهام المنجزة اليوم..."></textarea>
+    </div>
+
+    <h2 style="color:#FFC627">المهام</h2>
+    <table id="tasksTable">
+      <thead>
+        <tr>
+          <th>المهمة</th>
+          <th>المدة</th>
+          <th>الأولوية</th>
+          <th>الحالة</th>
+          <th>ملاحظات</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td contenteditable>مثال: إعداد تقرير الحضور</td>
+          <td contenteditable>1:30</td>
+          <td>
+            <select class="priority" data-type="priority">
+              <option value="عالية">عالية</option>
+              <option value="متوسطة" selected>متوسطة</option>
+              <option value="منخفضة">منخفضة</option>
+            </select>
+          </td>
+          <td>
+            <select class="status" data-type="status">
+              <option value="منجزة" selected>منجزة</option>
+              <option value="قيد التنفيذ">قيد التنفيذ</option>
+              <option value="مؤجلة">مؤجلة</option>
+            </select>
+          </td>
+          <td contenteditable>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="field" style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+      <button id="addRow">إضافة صف</button>
+      <button id="removeRow">حذف الصف الأخير</button>
+      <button id="submitBtn" style="background:#12b76a;color:#fff">إرسال التقرير</button>
+      <button id="copyBtn" class="secondary">نسخ كـنص</button>
+      <button id="downloadBtn" class="secondary">تنزيل JSON</button>
+      <span id="statusMsg" style="font-size:12px;color:#cbd5e1"></span>
+    </div>
+
+    <div class="field">
+      <label>ملاحظات عامة</label>
+      <textarea placeholder="أي ملاحظات أو تحديات..."></textarea>
+    </div>
+
+    <div class="field">
+      <label>خطة الغد</label>
+      <textarea placeholder="المهام المقترحة ليوم الغد..."></textarea>
+    </div>
+  </div>
+
+  <footer>
+    <small>© مركز تفاصيل للغات - جميع الحقوق محفوظة</small>
+  </footer>
+
+  <script>
+    function colorizeSelect(sel){
+      const v = sel.value;
+      let bg = '#0d1c4d';
+      let fg = '#fff';
+      if(sel.dataset.type === 'status'){
+        if(v === 'منجزة'){ bg = '#12b76a'; fg = '#fff'; }
+        else if(v === 'قيد التنفيذ'){ bg = '#facc15'; fg = '#000'; }
+        else if(v === 'مؤجلة'){ bg = '#f97316'; fg = '#fff'; }
+      } else if(sel.dataset.type === 'priority'){
+        if(v === 'عالية'){ bg = '#dc2626'; fg = '#fff'; }
+        else if(v === 'متوسطة'){ bg = '#facc15'; fg = '#000'; }
+        else if(v === 'منخفضة'){ bg = '#16a34a'; fg = '#fff'; }
+      }
+      sel.style.backgroundColor = bg;
+      sel.style.color = fg;
+    }
+
+    function initSelectColors(){
+      document.querySelectorAll('select.priority, select.status').forEach(s=>{
+        colorizeSelect(s);
+        s.addEventListener('change', ()=> colorizeSelect(s));
+      });
+    }
+
+    const tbody = document.getElementById('tasksTable').querySelector('tbody');
+    document.getElementById('addRow').addEventListener('click',()=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td contenteditable>—</td><td contenteditable>—</td>' +
+        '<td><select class="priority" data-type="priority">' +
+          '<option value="عالية">عالية</option>' +
+          '<option value="متوسطة" selected>متوسطة</option>' +
+          '<option value="منخفضة">منخفضة</option>' +
+        '</select></td>' +
+        '<td><select class="status" data-type="status">' +
+          '<option value="منجزة">منجزة</option>' +
+          '<option value="قيد التنفيذ" selected>قيد التنفيذ</option>' +
+          '<option value="مؤجلة">مؤجلة</option>' +
+        '</select></td>' +
+        '<td contenteditable>—</td>';
+      tbody.appendChild(tr);
+      tr.querySelectorAll('select').forEach(s=>{
+        colorizeSelect(s);
+        s.addEventListener('change', ()=> colorizeSelect(s));
+      });
+    });
+
+    document.getElementById('removeRow').addEventListener('click',()=>{
+      if(tbody.rows.length>1){ tbody.deleteRow(tbody.rows.length-1); }
+    });
+
+    // ==== إرسال البيانات إلى Google Sheet (Apps Script) ====
+    // ضع رابط الويب آب هنا بعد النشر:
+    const SUBMIT_URL = ""; // مثال: "https://script.google.com/macros/s/DEPLOYMENT_ID/exec"
+
+    function collectData(){
+      const data = {
+        employee: document.querySelector('input[placeholder="اكتب الاسم هنا"]').value.trim(),
+        department: document.querySelector('input[placeholder="مثال: الشؤون الأكاديمية"]').value.trim(),
+        date: document.querySelector('input[type="date"]').value,
+        summary: document.querySelector('textarea[placeholder*="تلخيص أبرز"]').value.trim(),
+        tasks: [],
+        notes: document.querySelector('textarea[placeholder^="أي ملاحظات"]').value.trim(),
+        plan: document.querySelector('textarea[placeholder^="المهام المقترحة"]').value.trim(),
+        submitted_at: new Date().toISOString()
+      };
+      tbody.querySelectorAll('tr').forEach(tr=>{
+        const tds = tr.querySelectorAll('td');
+        data.tasks.push({
+          task: (tds[0]?.innerText||'').trim(),
+          duration: (tds[1]?.innerText||'').trim(),
+          priority: tds[2]?.querySelector('select')?.value || '',
+          status: tds[3]?.querySelector('select')?.value || '',
+          remark: (tds[4]?.innerText||'').trim()
+        });
+      });
+      return data;
+    }
+
+    async function submitData(){
+      const msg = document.getElementById('statusMsg');
+      const payload = collectData();
+      if(!SUBMIT_URL){ msg.textContent = '● رجاءً أضف رابط Google Apps Script داخل الكود (SUBMIT_URL).'; return; }
+      msg.textContent = '● جارٍ الإرسال...';
+      try{
+        const res = await fetch(SUBMIT_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        await res.json().catch(()=>({ok:true}));
+        msg.textContent = '✓ تم الإرسال بنجاح';
+      }catch(e){
+        console.error(e);
+        msg.textContent = '✗ فشل الإرسال — تحقق من رابط الويب آب والصلاحيات.';
+      }
+    }
+
+    function copyAsText(){
+      const d = collectData();
+      const lines = [];
+      lines.push(`الموظف: ${d.employee}`);
+      lines.push(`القسم: ${d.department}`);
+      lines.push(`التاريخ: ${d.date}`);
+      lines.push('— ملخص اليوم —');
+      lines.push(d.summary);
+      lines.push('\n— المهام —');
+      d.tasks.forEach((t,i)=>{
+        lines.push(`${i+1}. ${t.task} | مدة: ${t.duration} | أولوية: ${t.priority} | حالة: ${t.status} | ملاحظات: ${t.remark}`);
+      });
+      lines.push('\n— ملاحظات عامة —');
+      lines.push(d.notes);
+      lines.push('\n— خطة الغد —');
+      lines.push(d.plan);
+      navigator.clipboard.writeText(lines.join('\n')).then(()=>{
+        document.getElementById('statusMsg').textContent = '✓ نُسخ النص للحافظة';
+      });
+    }
+
+    function downloadJSON(){
+      const blob = new Blob([JSON.stringify(collectData(), null, 2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'daily_report.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    document.getElementById('submitBtn').addEventListener('click', submitData);
+    document.getElementById('copyBtn').addEventListener('click', copyAsText);
+    document.getElementById('downloadBtn').addEventListener('click', downloadJSON);
+
+    // اختبارات سريعة
+    function runBasicTests(){
+      try{
+        const before = tbody.rows.length;
+        document.getElementById('addRow').click();
+        const after = tbody.rows.length;
+        console.assert(after === before + 1, 'Test(addRow): يجب أن يزداد عدد الصفوف بواحد');
+        const firstStatus = document.querySelector('select.status');
+        firstStatus.value = 'مؤجلة';
+        firstStatus.dispatchEvent(new Event('change'));
+        console.assert(firstStatus.style.backgroundColor !== '', 'Test(colorize): يجب تطبيق لون على الحقل');
+        firstStatus.value = 'منجزة';
+        firstStatus.dispatchEvent(new Event('change'));
+        console.log('All basic tests passed ✅');
+      }catch(e){
+        console.error('Basic tests failed ❌', e);
+      }
+    }
+    initSelectColors();
+    runBasicTests();
+  </script>
+</body>
+</html>
